@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS MODS 4K | Ultimate Gaming Hub</title>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #030712;
+            --card-bg: rgba(15, 23, 42, 0.65);
+            --primary: #00f0ff;
+            --secondary: #7000ff;
+            --accent: #ff0055;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --neon-glow: 0 0 20px rgba(0, 240, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.2);
+            --pink-glow: 0 0 20px rgba(255, 0, 85, 0.5), 0 0 40px rgba(255, 0, 85, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* 4K Background Grid & Canvas */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .bg-grid {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background: #02040a;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .loader-ring {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: var(--primary);
+            border-bottom-color: var(--accent);
+            animation: spin 1.5s linear infinite;
+            position: relative;
+            box-shadow: var(--neon-glow);
+        }
+
+        .loader-ring::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-left-color: var(--secondary);
+            border-right-color: var(--primary);
+            animation: spin-reverse 1s linear infinite;
+        }
+
+        .loader-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            margin-top: 25px;
+            letter-spacing: 4px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .progress-bar-container {
+            width: 250px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            box-shadow: 0 0 10px var(--primary);
+            transition: width 0.1s linear;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header / Navbar */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            background: rgba(3, 7, 18, 0.8);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        .search-box {
+            position: relative;
+            width: 320px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 18px 10px 40px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            color: #fff;
+            outline: none;
+            font-family: inherit;
+            transition: 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: var(--neon-glow);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 20px 40px;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(180deg, #ffffff 30%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Mod Cards Grid */
+        .main-content {
+            padding: 40px 8%;
+            flex-grow: 1;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        /* 4K Glassmorphic Card */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--primary);
+            box-shadow: var(--neon-glow), inset 0 0 15px rgba(0, 240, 255, 0.1);
+        }
+
+        .card-img-wrapper {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .card-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .card:hover .card-img-wrapper img {
+            transform: scale(1.1);
+        }
+
+        .badge-mod {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(45deg, var(--accent), var(--secondary));
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .card-body {
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .card-info {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        .card-info span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mod-features {
+            list-style: none;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .mod-features li {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mod-features li i {
+            color: var(--primary);
+            font-size: 0.8rem;
+        }
+
+        /* Particle Motion Download Button */
+        .btn-particle-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .btn-particle {
+            position: relative;
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            outline: none;
+            background: linear-gradient(90deg, #00f0ff, #7000ff);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+            border-radius: 8px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn-particle:hover {
+            box-shadow: var(--neon-glow);
+        }
+
+        .btn-particle:active {
+            transform: scale(0.97);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 40px;
+            background: rgba(3, 7, 18, 0.9);
+        }
+
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid var(--primary);
+            box-shadow: var(--neon-glow);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            transform: translateY(30px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: translateY(0);
+        }
+
+        .modal-box h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .modal-box p {
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-reverse {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .search-box {
+                width: 100%;
+            }
+            .hero h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas Particle Background -->
+    <canvas id="particle-canvas"></canvas>
+    <div class="bg-grid"></div>
+
+    <!-- Preloader Animation -->
+    <div id="preloader">
+        <div class="loader-ring"></div>
+        <div class="loader-title">NEXUS MODS 4K</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="loader-progress"></div>
+        </div>
+    </div>
+
+    <!-- Main Web Container -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <a href="#" class="logo">
+                <i class="fa-solid fa-gamepad"></i> NEXUS<span>MODS</span>
+            </a>
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Search APK Mods...">
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>ULTRA HD MODDED APKS</h1>
+            <p>Experience uninterrupted gameplay with premium features unlocked, 4K texture mods, and max FPS performance.</p>
+        </section>
+
+        <!-- Mod Cards Grid -->
+        <main class="main-content">
+            <div class="grid-container" id="modGrid">
+                <!-- Cards will be populated dynamically via JavaScript -->
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2026 NEXUS MODS 4K. All rights reserved. Ultra High-Performance Gaming Portal.</p>
+        </footer>
+    </div>
+
+    <!-- Download Modal Container -->
+    <div class="modal-overlay" id="downloadModal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+            <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;"></i>
+            <h3 id="modalGameTitle">Preparing File</h3>
+            <p id="modalStatus">Initializing high-speed 4K mirror links...</p>
+            <div class="progress-bar-container" style="width: 100%; margin-bottom: 20px;">
+                <div class="progress-bar" id="downloadProgress"></div>
+            </div>
+            <button class="btn-particle" id="modalActionBtn" style="display: none;" onclick="closeModal()">Complete Download</button>
+        </div>
+    </div>
+
+    <!-- Main Program Script -->
+    <script>
+        /* ===================================================
+           1. DATA CONFIGURATION (4K Game Mods)
+           =================================================== */
+        const modData = [
+            {
+                id: 1,
+                title: "Cyberpunk Mobile 2077",
+                version: "v2.1.4",
+                size: "1.8 GB",
+                rating: "4.9",
+                badge: "MAX GRAPHICS",
+                image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=600&q=80",
+                features: ["Unlimited Eddies & Credits", "Ray Tracing Unlocked", "God Mode / Infinite Health"]
+            },
+            {
+                id: 2,
+                title: "Shadow Blade: 4K Reborn",
+                version: "v1.0.8",
+                size: "450 MB",
+                rating: "4.8",
+                badge: "PRO MOD",
+                image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=600&q=80",
+                features: ["All Weapons Unlocked", "Max Level VIP Active", "Zero Skill Cooldown"]
+            },
+            {
+                id: 3,
+                title: "Asphalt Speed Overdrive",
+                version: "v4.5.0",
+                size: "2.1 GB",
+                rating: "4.7",
+                badge: "ULTRA FPS",
+                image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=600&q=80",
+                features: ["Infinite Nitro", "All Hypercars Unlocked", "Anti-Ban Enabled"]
+            },
+            {
+                id: 4,
+                title: "Apex Arena Legends",
+                version: "v3.2.1",
+                size: "1.2 GB",
+                rating: "4.9",
+                badge: "VIP MENU",
+                image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=600&q=80",
+                features: ["Wallhack / Aimbot Mod", "Unlimited Coins", "High FPS Unlocker"]
+            },
+            {
+                id: 5,
+                title: "Genshin Quest 4K",
+                version: "v4.2.0",
+                size: "3.4 GB",
+                rating: "4.9",
+                badge: "UNLOCKED",
+                image: "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=600&q=80",
+                features: ["Infinite Primogems", "Max World Level", "All Characters 5-Star"]
+            },
+            {
+                id: 6,
+                title: "Dead Zone Survival",
+                version: "v2.0.1",
+                size: "890 MB",
+                rating: "4.6",
+                badge: "GOD MOD",
+                image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80",
+                features: ["Unlimited Ammo", "Crafting Free", "No Recoil"]
+            }
+        ];
+
+        /* ===================================================
+           2. PLAYER PRELOADER SYSTEM
+           =================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            const preloader = document.getElementById('preloader');
+            const loaderProgress = document.getElementById('loader-progress');
+            let progress = 0;
+
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 12) + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    loaderProgress.style.width = '100%';
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        preloader.style.opacity = '0';
+                        preloader.style.visibility = 'hidden';
+                    }, 400);
+                } else {
+                    loaderProgress.style.width = progress + '%';
+                }
+            }, 60);
+
+            renderCards(modData);
+        });
+
+        /* ===================================================
+           3. BACKGROUND CANVASES & PARTICLE ENGINE
+           =================================================== */
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.8;
+                this.speedY = (Math.random() - 0.5) * 0.8;
+                this.color = Math.random() > 0.5 ? '#00f0ff' : '#7000ff';
+                this.alpha = Math.random() * 0.6 + 0.2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < 90; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw connecting lines between close particles
+            for (let a = 0; a < particles.length; a++) {
+                for (let b = a + 1; b < particles.length; b++) {
+                    const dx = particles[a].x - particles[b].x;
+                    const dy = particles[a].y - particles[b].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 120) {
+                        ctx.save();
+                        ctx.globalAlpha = (1 - dist / 120) * 0.15;
+                        ctx.strokeStyle = '#00f0ff';
+                        ctx.lineWidth = 0.8;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[a].x, particles[a].y);
+                        ctx.lineTo(particles[b].x, particles[b].y);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        /* ===================================================
+           4. CARD RENDERING & SEARCH ENGINE
+           =================================================== */
+        function renderCards(data) {
+            const grid = document.getElementById('modGrid');
+            grid.innerHTML = '';
+
+            if(data.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 1.2rem;">No Mods Found Matching Your Search.</p>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-img-wrapper">
+                        <img src="${item.image}" alt="${item.title}">
+                        <span class="badge-mod">${item.badge}</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">${item.title}</h3>
+                        <div class="card-info">
+                            <span><i class="fa-solid fa-code-branch"></i> ${item.version}</span>
+                            <span><i class="fa-solid fa-hard-drive"></i> ${item.size}</span>
+                            <span><i class="fa-solid fa-star" style="color: #ffd700;"></i> ${item.rating}</span>
+                        </div>
+                        <ul class="mod-features">
+                            ${item.features.map(f => `<li><i class="fa-solid fa-bolt"></i> ${f}</li>`).join('')}
+                        </ul>
+                        <div class="btn-particle-container">
+                            <button class="btn-particle" onclick="triggerDownload(event, '${item.title}')">
+                                <i class="fa-solid fa-download"></i> Download MOD
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Live Search Filter
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = modData.filter(mod => 
+                mod.title.toLowerCase().includes(query) || 
+                mod.badge.toLowerCase().includes(query)
+            );
+            renderCards(filtered);
+        });
+
+        /* ===================================================
+           5. BUTTON MOTION & PARTICLE BURST EFFECT
+           =================================================== */
+        function triggerDownload(event, gameTitle) {
+            const btn = event.currentTarget;
+            const rect = btn.getBoundingClientRect();
+
+            // Create localized explosion particles
+            for (let i = 0; i < 30; i++) {
+                createBurstParticle(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            }
+
+            // Open popup modal after burst
+            setTimeout(() => {
+                openModal(gameTitle);
+            }, 300);
+        }
+
+        function createBurstParticle(x, y) {
+            const particle = document.createElement('div');
+            document.body.appendChild(particle);
+
+            const size = Math.floor(Math.random() * 8 + 4);
+            const destinationX = x + (Math.random() - 0.5) * 200;
+            const destinationY = y + (Math.random() - 0.5) * 200;
+            const color = Math.random() > 0.5 ? '#00f0ff' : '#ff0055';
+
+            particle.style.cssText = `
+                position: fixed;
+                left: ${x}px;
+                top: ${y}px;
+                width: ${size}px;
+                height: ${size}px;
+                background: ${color};
+                border-radius: 50%;
+                pointer-events: none;
+                box-shadow: 0 0 10px ${color};
+                z-index: 9999;
+                transition: transform 0.6s cubic-bezier(0.1, 1, 0.1, 1), opacity 0.6s ease;
+            `;
+
+            requestAnimationFrame(() => {
+                particle.style.transform = `translate(${destinationX - x}px, ${destinationY - y}px) scale(0)`;
+                particle.style.opacity = '0';
+            });
+
+            setTimeout(() => {
+                particle.remove();
+            }, 600);
+        }
+
+        /* ===================================================
+           6. MODAL & DOWNLOAD SIMULATION
+           =================================================== */
+        const modal = document.getElementById('downloadModal');
+        const downloadProgress = document.getElementById('downloadProgress');
+        const modalStatus = document.getElementById('modalStatus');
+        const modalActionBtn = document.getElementById('modalActionBtn');
+        const modalGameTitle = document.getElementById('modalGameTitle');
+
+        function openModal(title) {
+            modalGameTitle.innerText = title;
+            modalStatus.innerText = "Securing 4K server connection...";
+            downloadProgress.style.width = '0%';
+            modalActionBtn.style.display = 'none';
+            modal.classList.add('active');
+
+            let p = 0;
+            const timer = setInterval(() => {
+                p += Math.floor(Math.random() * 15) + 10;
+                if (p >= 100) {
+                    p = 100;
+                    downloadProgress.style.width = '100%';
+                    modalStatus.innerText = "Mod File Ready to Install!";
+                    modalActionBtn.style.display = 'inline-flex';
+                    clearInterval(timer);
+                } else {
+                    downloadProgress.style.width = p + '%';
+                }
+            }, 150);
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+    </script>
+</body>
+</html>
